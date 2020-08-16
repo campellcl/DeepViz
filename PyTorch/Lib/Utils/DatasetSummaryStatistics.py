@@ -16,12 +16,14 @@ class DatasetSummaryStatistics:
     def __init__(self, dataset_name: DatasetNames, dataset_root_path: str):
         self.dataset_name = dataset_name
         self.dataset_root_path = dataset_root_path
+        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        self.dataset_image_channel_means = None
+        self.dataset_image_channel_standard_deviations = None
+        self.generate_summary_stats()
 
     def generate_summary_stats(self):
-        summary_stats = None
         if self.dataset_name == DatasetNames.CIFAR_TEN:
-            print('CIFAR 10')
-            summary_stats = self.generate_cifar_ten_summary_stats()
+            self.__generate_cifar_ten_summary_stats()
 
     def generate_cifar_ten_summary_stats_in_memory(self):
         cifar_ten_dataset = CIFAR10(
@@ -33,7 +35,7 @@ class DatasetSummaryStatistics:
         # Use np.concatenate to stick all images together to form a 50,000 x 32 x 3
         print('woah')
 
-    def generate_cifar_ten_summary_stats(self):
+    def __generate_cifar_ten_summary_stats(self):
         # https://stackoverflow.com/a/60103056/3429090
         mean_tensor = None
         std_tensor = None
@@ -72,7 +74,8 @@ class DatasetSummaryStatistics:
         # num_sample_images = len(cifar_data_loader.dataset)
         total_num_image_samples = 0
         # Compute the running mean and standard deviation calculations:
-        for image_batch, image_batch_targets in cifar_data_loader:
+        for batch_index, (image_batch, image_batch_targets) in enumerate(cifar_data_loader):
+            image_batch = image_batch.to(device=self.device)
             # Rearrange batch from shape [B, C, W, H] to shape [B, C, W * H]:
             image_batch = image_batch.view(image_batch.size(0), image_batch.size(1), -1)
             # Maintain running count of number of samples:
@@ -81,33 +84,15 @@ class DatasetSummaryStatistics:
             mean_tensor += image_batch.mean(2).sum(0)
             var_tensor += image_batch.var(2).sum(0)
 
-            # sample_image = image_batch[0]
-            # image_channel_sums_tensor += sample_image
-            # sample_image_channel_means = sample_image.mean(dim=1).sum(dim=1)
-
-            # Add up every channel across every image in the image batch:
-            # image_batch_channel_sums = image_batch.sum(dim=0)
-            # image_channel_sums_tensor += image_batch_channel_sums
-
-            # image_batch_channel_means = image_batch.mean(dim=2).sum(dim=2)
-            # mean_tensor += image_batch.
-            # The last batch can have a smaller batch size if the dataset is not evenly divisible:
-            # num_samples_in_batch = image_batch.size(0)
-            # Convert the image_batch to
-            # image_batch = image_batch.view(num_samples_in_batch, image_batch.size(1), -1)
         # Now we take the average of the running sum of means:
         mean_tensor /= total_num_image_samples
         var_tensor /= total_num_image_samples
         std_tensor = torch.sqrt(var_tensor)
-        print('done!')
-        '''
-        We want an ouptut tensor of size (3, 1) which contains the average pixel value for each 32 x 32 RGB channel.
-        Approach 1) sum up every 32 x 32 RGB image channel and divide by the total number of images.
-        Approach 2) 
-        '''
-        # 1) Sum every channel and divide by total number of channels
-        # 2) Take the average of each channel
+        self.dataset_image_channel_means = mean_tensor
+        self.dataset_image_channel_standard_deviations = std_tensor
+
 
 if __name__ == '__main__':
     cifar_summary_stats = DatasetSummaryStatistics(dataset_name=DatasetNames.CIFAR_TEN, dataset_root_path='DeepViz/Data/CIFAR/10/')
-    cifar_summary_stats.generate_summary_stats()
+    print('CIFAR 10 Dataset Image Channel Means: %s' % cifar_summary_stats.dataset_image_channel_means)
+    print('CIFAR 10 Dataset Image Channel Standard Deviations: %s' % cifar_summary_stats.dataset_image_channel_standard_deviations)
