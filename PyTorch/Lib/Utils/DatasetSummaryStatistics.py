@@ -33,7 +33,8 @@ class DatasetSummaryStatistics:
             transform=transforms.ToTensor()
         )
         # Use np.concatenate to stick all images together to form a 50,000 x 32 x 3
-        print('woah')
+        raise NotImplementedError('Not implemented yet. Working on identifying a discrepancy in std deviation computed'
+                                  ' over the running batch variances.')
 
     def __generate_cifar_ten_summary_stats(self):
         # https://stackoverflow.com/a/60103056/3429090
@@ -75,7 +76,7 @@ class DatasetSummaryStatistics:
         total_num_image_samples = 0
         # Compute the running mean and standard deviation calculations:
         for batch_index, (image_batch, image_batch_targets) in enumerate(cifar_data_loader):
-            image_batch = image_batch.to(device=self.device)
+            # image_batch = image_batch.to(device=self.device)
             # Rearrange batch from shape [B, C, W, H] to shape [B, C, W * H]:
             image_batch = image_batch.view(image_batch.size(0), image_batch.size(1), -1)
             # Maintain running count of number of samples:
