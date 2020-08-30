@@ -9,6 +9,8 @@ from PyTorch.Lib.EnumeratedTypes.DatasetTypes import DatasetTypes
 from PyTorch.Lib.EnumeratedTypes.DatasetNames import DatasetNames
 from PyTorch.Lib.UtilityMethods import show_image_batch
 
+global IS_DEBUG
+
 
 class CIFARTenDataLoaders:
     """
@@ -102,12 +104,18 @@ class CIFARTenDataLoaders:
         ])
 
         # Declare training dataset:
+        if IS_DEBUG:
+            print('Downloading training data...')
         train_dataset = CIFAR10(root='./Data/CIFAR/10/', train=True, download=True, transform=training_transforms)
 
         # Declare validation dataset:
+        if IS_DEBUG:
+            print('Downloading validation data...')
         val_dataset = CIFAR10(root='./Data/CIFAR/10/', train=True, download=True, transform=training_transforms)
 
         # Declare testing dataset:
+        if IS_DEBUG:
+            print('Downloading testing data...')
         test_dataset = CIFAR10(root='./Data/CIFAR/10/', train=False, download=True, transform=training_transforms)
 
         # Partition training dataset into training and validation datasets:
@@ -180,6 +188,11 @@ class TinyImageNetDataset(Dataset):
 
 
 if __name__ == '__main__':
+    IS_DEBUG = True
+    print('Will run in debug mode?: %s' % IS_DEBUG)
+
+    if IS_DEBUG:
+        print('Instantiating PyTorch DataLoaders...')
     cifar_data_loaders = CIFARTenDataLoaders(
         val_dataset_size_percentage=0.20,
         train_img_batch_size=10,
@@ -192,7 +205,7 @@ if __name__ == '__main__':
     print('Instantiated DataLoaders.')
     image_channel_means = Tensor(cifar_data_loaders.dataset_image_channel_means['train'])
     image_channel_stds = Tensor(cifar_data_loaders.dataset_image_channel_standard_deviations['train'])
-
+    print('Displaying training image batch...')
     show_image_batch(
         dataset_name=DatasetNames.CIFAR_TEN,
         data_loader=cifar_data_loaders.train_data_loader,
