@@ -108,14 +108,15 @@ class VanillaBackprop:
                 first_layer = self.model._modules.get(network_layers_odict_keys[0])
                 first_layer.register_backward_hook(module_gradient_hook)
 
-    def compute_gradients_for_single_image(self, input_image: Tensor, target_class_label: int):
+    def compute_gradients_for_single_image(self, input_image: Tensor, target_class_label: Tensor):
         """
         compute_gradients_for_single_image: Computes the gradients for a single input image via one_hot_encoding and
          backpropagation.
         :param input_image: <torch.Tensor> A single sample image (read by a PyTorch DataLoader instance) for which the
          gradients are to be computed.
-        :param target_class_label: <int> The target class label of the supplied image (in integer encoded non-human
-         readable format).
+        :param target_class_label: <torch.Tensor> The target class label of the supplied image (in integer encoded
+         non-human readable format). Note that this is a tensor only so that it can be moved to the GPU alongside the
+         input image tensor.
         :return gradient_array <numpy.ndarray> A numpy array populated with the gradient of the input image, computed
          via backpropagation during a single training pass:
         """
@@ -163,7 +164,10 @@ if __name__ == '__main__':
     # train_image_batch, train_labels = image_batch_iterable.next()
 
     # Create the model used to visualize the data:
-    alexnet = models.alexnet(pretrained=True)
+    if IS_GPU:
+        alexnet = models.alexnet(pretrained=True).cuda(device=device)
+    else:
+        alexnet = models.alexnet(pretrained=True)
 
     # Wrap this model in a custom class with utility methods for activation visualization:
     vanilla_backprop = VanillaBackprop(model=alexnet)
@@ -179,6 +183,7 @@ if __name__ == '__main__':
 
         # Iterate over every image in the current image batch:
         for image_index, (image, label) in enumerate(zip(images, labels)):
+            # image, label = Variable(image.cuda(), requires_grad=True), Variable(label.cuda(), requires_grad=False)
             gradient = vanilla_backprop.compute_gradients_for_single_image(input_image=image, target_class_label=label)
 
 
