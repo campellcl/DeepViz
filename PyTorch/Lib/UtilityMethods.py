@@ -16,6 +16,7 @@ def show_image_batch(dataset_name: DatasetNames, data_loader: DataLoader, unorma
     show_image_batch: Displays a de-normalized batch of images from either the training, validation, or testing dataset
      depending on the data_loader instance provided. Additionally, the number of training images displayed in the batch
      is dependent on the settings of the provided data_loader instance.
+    Note: For an example of this method in action, see the main method in: DeepViz.PyTorch.Lib.DataLoaders
     :param dataset_name: <EnumeratedTypes.DatasetNames> The name of the the dataset associated with the provided
      DataLoader.
     :param data_loader: <torch.utils.data.DataLoader> An already instantiated DataLoader instance which provides access
