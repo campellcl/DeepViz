@@ -9,7 +9,7 @@ from PyTorch.Lib.EnumeratedTypes.DatasetTypes import DatasetTypes
 from PyTorch.Lib.EnumeratedTypes.DatasetNames import DatasetNames
 from PyTorch.Lib.UtilityMethods import show_image_batch
 
-global IS_DEBUG
+IS_DEBUG: bool
 
 
 class CIFARTenDataLoaders:
@@ -25,7 +25,8 @@ class CIFARTenDataLoaders:
 
     def __init__(self, val_dataset_size_percentage: float, train_img_batch_size: int, val_img_batch_size: int,
                  test_img_batch_size: int, reshuffle_data_every_epoch: bool = False,
-                 shuffle_dataset_during_partitioning: bool = True, data_loader_num_workers: int = 0):
+                 shuffle_dataset_during_partitioning: bool = True, data_loader_num_workers: int = 0,
+                 is_debug: bool = True):
         """
         __init__:
         :param val_dataset_size_percentage: <float> What percentage of the training dataset should be allocated as a
@@ -44,7 +45,13 @@ class CIFARTenDataLoaders:
         :param data_loader_num_workers: <int> How many subprocesses to use for data loading. A value of 0 means that
          the data will be loaded in the main process.
          see: https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader
+        :param is_debug: <bool> A boolean flag indicating if debug information should be printed to the console during
+         execution.
         """
+        # Declare global variables:
+        global IS_DEBUG
+        # Initialize global variables:
+        IS_DEBUG = is_debug
         self.val_dataset_size_percentage = val_dataset_size_percentage
         self.train_img_batch_size = train_img_batch_size
         self.val_img_batch_size = val_img_batch_size
@@ -106,17 +113,17 @@ class CIFARTenDataLoaders:
         # Declare training dataset:
         if IS_DEBUG:
             print('Downloading training data...')
-        train_dataset = CIFAR10(root='./Data/CIFAR/10/', train=True, download=True, transform=training_transforms)
+        train_dataset = CIFAR10(root='../../../Data/Datasets/CIFAR/10/', train=True, download=True, transform=training_transforms)
 
         # Declare validation dataset:
         if IS_DEBUG:
             print('Downloading validation data...')
-        val_dataset = CIFAR10(root='./Data/CIFAR/10/', train=True, download=True, transform=training_transforms)
+        val_dataset = CIFAR10(root='../../../Data/Datasets/CIFAR/10/', train=True, download=True, transform=training_transforms)
 
         # Declare testing dataset:
         if IS_DEBUG:
             print('Downloading testing data...')
-        test_dataset = CIFAR10(root='./Data/CIFAR/10/', train=False, download=True, transform=training_transforms)
+        test_dataset = CIFAR10(root='../../../Data/Datasets/CIFAR/10/', train=False, download=True, transform=training_transforms)
 
         # Partition training dataset into training and validation datasets:
         num_training_samples = len(train_dataset)
@@ -167,24 +174,24 @@ class CIFARTenDataLoaders:
         return train_data_loader, val_data_loader, test_data_loader
 
 
-class TinyImageNetDataset(Dataset):
-    """
-    Tiny ImageNet 200 Dataset.
-    """
-
-    def __init__(self, root_dir: str ='Data/TinyImageNet'):
-        self.root_dir = root_dir
-
-    def __getitem__(self, idx: int):
-        """
-        Fetches a data sample in the Tiny ImageNet dataset based on the provided index.
-        :param idx: <int> The specified index of the item to return.
-        :return:
-        """
-        raise NotImplementedError
-
-    def __len__(self):
-        raise NotImplementedError
+# class TinyImageNetDataset(Dataset):
+#     """
+#     Tiny ImageNet 200 Dataset.
+#     """
+#
+#     def __init__(self, root_dir: str = 'Data/TinyImageNet'):
+#         self.root_dir = root_dir
+#
+#     def __getitem__(self, idx: int):
+#         """
+#         Fetches a data sample in the Tiny ImageNet dataset based on the provided index.
+#         :param idx: <int> The specified index of the item to return.
+#         :return:
+#         """
+#         raise NotImplementedError
+#
+#     def __len__(self):
+#         raise NotImplementedError
 
 
 if __name__ == '__main__':
