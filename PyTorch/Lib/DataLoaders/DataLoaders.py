@@ -174,6 +174,31 @@ class CIFARTenDataLoaders:
         return train_data_loader, val_data_loader, test_data_loader
 
 
+class TinyImageNetDataLoaders:
+    """
+    TinyImageNetDataLoaders:
+    """
+
+    def __init__(self, val_dataset_size_percentage: float, train_img_batch_size: int, val_img_batch_size: int,
+                 test_img_batch_size: int, reshuffle_data_every_epoch: bool = False,
+                 shuffle_dataset_during_partitioning: bool = True, data_loader_num_workers: int = 0,
+                 is_debug: bool = True):
+        # Declare global variables:
+        global IS_DEBUG
+        # Initialize vars:
+        IS_DEBUG = is_debug
+        self.val_dataset_size_percentage = val_dataset_size_percentage
+        self.train_img_batch_size = train_img_batch_size
+        self.val_img_batch_size = val_img_batch_size
+        self.test_img_batch_size = test_img_batch_size
+        self.reshuffle_data_every_epoch = reshuffle_data_every_epoch
+        self.shuffle_dataset_during_partitioning = shuffle_dataset_during_partitioning
+        self.data_loader_num_workers = data_loader_num_workers
+
+        '''
+        TinyImagenet Summary Statistics computed by the script at PyTorch/Lib/Utils/DatasetSummaryStatistics.py
+        '''
+
 # class TinyImageNetDataset(Dataset):
 #     """
 #     Tiny ImageNet 200 Dataset.

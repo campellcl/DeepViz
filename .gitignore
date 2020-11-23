@@ -1,6 +1,6 @@
 # Custom directories:
-Data/CIFAR/
-Data/TinyImageNet/
+Data/Datasets/CIFAR/
+Data/Datasets/TinyImageNet/
 
 # Created by .ignore support plugin (hsz.mobi)
 ### Python template

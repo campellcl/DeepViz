@@ -1,6 +1,7 @@
 from torchvision.datasets import CIFAR10
 import torchvision.transforms as transforms
 import torch
+from torch import Tensor
 from torch.utils.data import DataLoader
 from torch.utils.data import Dataset
 import numpy as np
@@ -24,6 +25,10 @@ class DatasetSummaryStatistics:
     def generate_summary_stats(self):
         if self.dataset_name == DatasetNames.CIFAR_TEN:
             self.__generate_cifar_ten_summary_stats()
+        elif self.dataset_name == DatasetNames.TINY_IMAGE_NET:
+            self.__generate_tiny_imagenet_summary_stats()
+        else:
+            raise NotImplementedError
 
     def generate_cifar_ten_summary_stats_in_memory(self):
         cifar_ten_dataset = CIFAR10(
@@ -35,6 +40,13 @@ class DatasetSummaryStatistics:
         # Use np.concatenate to stick all images together to form a 50,000 x 32 x 3
         raise NotImplementedError('Not implemented yet. Working on identifying a discrepancy in std deviation computed'
                                   ' over the running batch variances.')
+
+    def __generate_tiny_imagenet_summary_stats(self):
+        mean_tensor: Tensor
+        std_tensor: Tensor
+
+
+
 
     def __generate_cifar_ten_summary_stats(self):
         # https://stackoverflow.com/a/60103056/3429090
@@ -94,6 +106,7 @@ class DatasetSummaryStatistics:
 
 
 if __name__ == '__main__':
-    cifar_summary_stats = DatasetSummaryStatistics(dataset_name=DatasetNames.CIFAR_TEN, dataset_root_path='DeepViz/Data/CIFAR/10/')
+    cifar_summary_stats = DatasetSummaryStatistics(dataset_name=DatasetNames.CIFAR_TEN, dataset_root_path='../../../Data/Datasets/CIFAR/10/')
     print('CIFAR 10 Dataset Image Channel Means: %s' % cifar_summary_stats.dataset_image_channel_means)
     print('CIFAR 10 Dataset Image Channel Standard Deviations: %s' % cifar_summary_stats.dataset_image_channel_standard_deviations)
+    tiny_imagenet_stats = DatasetSummaryStatistics(dataset_name=DatasetNames.TINY_IMAGE_NET, dataset_root_path='../../../Data/Datasets/TinyImageNet/')
