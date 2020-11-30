@@ -43,7 +43,7 @@ def get_mnist_training_data_set(train_buffer_size: int = 60000, train_batch_size
     return train_dataset
 
 
-def make_dcgan_generator_model(kernel_size=7, input_image_length=28, input_image_width=28, input_image_resolution=256, num_image_channels=1, latent_vector_size=100):
+def make_dcgan_generator_model(kernel_size=5, receptive_field_size=7, input_image_length=28, input_image_width=28, input_image_resolution=256, num_image_channels=1, latent_vector_size=100):
     """
     make_generator_model: TODO: Docstring.
     The architecture for this tutorial is specified at the following URL:
@@ -53,63 +53,91 @@ def make_dcgan_generator_model(kernel_size=7, input_image_length=28, input_image
      https://pytorch.org/tutorials/beginner/dcgan_faces_tutorial.html#generator
     The default values for this method are sourced from the above URLs while adapting for the attributes of the MNIST
     dataset (as in the TensorFlow DCGAN tutorial). The addition of batch normalization functions after the dense fully
-    connected layers is a major contribution fo the DCGAN paper. The strided Conv2DTranspose layers allow the latent
+    connected layers is a major contribution fo the DCGAN paper. The stride-ed Conv2DTranspose layers allow the latent
     vector to be transformed into a volume with the same shape as the input image.
     :param kernel_size: <int> The size of the kernel (i.e. feature maps) in the generator.
+    :param receptive_field_size: <int> The size of the initial receptive field (i.e. the dimensionality after the
+     initial projection of the latent `z` vector). In the original research paper this is 4, such that the first module
+     reshapes the z vector (of shape 100) into a 4 x 4 x input_image_resolution output.
+    :param input_image_length: <int> The length/height/num-columns in the input image, for MNIST this is 28.
+    :param input_image_width: <int> The width/depth/num-rows in the input image, for MNIST this is 28.
     :param input_image_resolution: <int> The pixel resolution of the input image. For an 8-bit image (e.g. MNIST) this
      value is 2^8=256.
+    :param num_image_channels: <int> The number of image channels that the output image should contain. For the MNIST
+     dataset this value is a 1, indicating greyscale images. For ImageNet this value would be a 3 indicating RGB images.
     :param latent_vector_size: <int> This is the size of the latent 'z' vector (i.e. the size of the generator input).
-    :return:
+    :return model: A Keras Generator model which is ready to be fed input during the training process.
     """
     model = tf.keras.Sequential()
     ''' Project and reshape module: Project the latent z vector into an image-like shape: '''
     # Project and reshape 'z' as in https://pytorch.org/tutorials/beginner/dcgan_faces_tutorial.html#generator:
     model.add(
-        layers.Dense(kernel_size*kernel_size*input_image_resolution, use_bias=False, input_shape=(latent_vector_size,))
+        layers.Dense(
+            receptive_field_size*receptive_field_size*input_image_resolution,
+            use_bias=False,
+            input_shape=(latent_vector_size,)
+        )
     )
     model.add(layers.BatchNormalization())
     # It appears that TensorFlow leverages LeakyRELU instead of RELU (which PyTorch uses) due to the current industry
     # bias toward non-saturating activation functions, but I cannot confirm this.
     # TODO: Why stick a LeakyReLU on the transformed and normalized latent vector?
     model.add(layers.ReLU())
-    # TODO: Why the reshape here? What is the shape output of the LeakyReLU layer?
-    model.add(layers.Reshape(target_shape=(kernel_size, kernel_size, input_image_resolution)))
-    # Below the None says to ignore the batch_size for the assertion:
-    assert model.output_shape == (None, kernel_size, kernel_size, input_image_resolution)   # default (?, 7, 7, 256)
+    # TODO: Why the reshape here? The shape of the ReLU layer above would be the dense layer of size 12544.
+    model.add(layers.Reshape(target_shape=(receptive_field_size, receptive_field_size, input_image_resolution)))
+    # Below, the None says to ignore the batch_size for the assertion:
+    assert model.output_shape == (None, receptive_field_size, receptive_field_size, input_image_resolution)   # default (?, 7, 7, 256)
 
     ''' CONV 1 module: Up-sample the random noise. '''
     model.add(
-        layers.Conv2DTranspose(filters=int(input_image_resolution/2), kernel_size=(int(kernel_size*2), int(kernel_size*2)),
-                               strides=(1, 1), padding='same', use_bias=False)
+        layers.Conv2DTranspose(
+            filters=int(input_image_resolution/2),
+            kernel_size=(kernel_size, kernel_size),
+            strides=(1, 1),
+            padding='same',
+            use_bias=False
+        )
     )
-    assert model.output_shape == (None, int(kernel_size*2), int(kernel_size*2), int(input_image_resolution/2)), model.output_shape    # default (?, 14, 14, 128)
+    assert model.output_shape == (None, receptive_field_size, receptive_field_size, int(input_image_resolution/2)), model.output_shape    # default (?, 7, 7, 128)
     model.add(layers.BatchNormalization())
     model.add(layers.ReLU())
 
     ''' CONV 2 module: Up-sample again'''
     model.add(
-        layers.Conv2DTranspose(filters=int(input_image_resolution/4), kernel_size=(kernel_size*4, kernel_size*4),
-                               strides=(2, 2), padding='same', use_bias=False)
+        layers.Conv2DTranspose(
+            filters=int(input_image_resolution/4),
+            kernel_size=(kernel_size, kernel_size),
+            strides=(2, 2),
+            padding='same',
+            use_bias=False
+        )
     )
-    assert model.output_shape == (None, kernel_size*4, kernel_size*4, int(input_image_resolution/4))    # default (?, 28, 28, 64)
+    assert model.output_shape == (None, receptive_field_size*2, receptive_field_size*2, int(input_image_resolution/4)), model.output_shape    # default (?, 14, 14, 64)
     model.add(layers.BatchNormalization())
     model.add(layers.ReLU())
 
     ''' CONV 3 module: Up-sample again '''
-    model.add(layers.Conv2DTranspose(filters=int(input_image_resolution/8), kernel_size=(kernel_size*8, kernel_size*8),
-                                     strides=(2, 2), padding='same', use_bias=False))
-    assert model.output_shape == (None, kernel_size*8, kernel_size*8, int(input_image_resolution/8))    # default (?, 56, 56, 32)
-    model.add(layers.BatchNormalization())
-    model.add(layers.ReLU())
+    # TODO: Why cut the additional CONV 3 module? The dimensionality does not work out right with this in here.
+    # model.add(layers.Conv2DTranspose(filters=int(input_image_resolution/8), kernel_size=(kernel_size, kernel_size),
+    #                                  strides=(2, 2), padding='same', use_bias=False))
+    # assert model.output_shape == (None, receptive_field_size*4, receptive_field_size*4, int(input_image_resolution/8)), model.output_shape    # default (?, 28, 28, 32)
+    # model.add(layers.BatchNormalization())
+    # model.add(layers.ReLU())
 
     ''' CONV 4 module: Output of generator (i.e. G(z)) '''
     # Here our final output is an MNIST image (batch_size, 1, 28, 28, 1)
-    model.add(layers.Conv2DTranspose(filters=num_image_channels, kernel_size=(input_image_length, input_image_width),
-                                     strides=(2, 2), padding='same', use_bias=False, activation='tanh'))
-    # model.add(layers.Activation(activation=activations.tanh))
-    assert model.output_shape == (None, input_image_length, input_image_width, num_image_channels)
+    model.add(
+        layers.Conv2DTranspose(
+            filters=num_image_channels,
+            kernel_size=(kernel_size, kernel_size),
+            strides=(2, 2),
+            padding='same',
+            use_bias=False,
+            activation='tanh'
+        )
+    )
+    assert model.output_shape == (None, input_image_length, input_image_width, num_image_channels), model.output_shape      # default (?, 28, 28, 1)
     return model
-
 
 
 if __name__ == '__main__':
@@ -117,8 +145,10 @@ if __name__ == '__main__':
     print('Running tensorflow version: %s' % tf.__version__)
     train_dataset = get_mnist_training_data_set()
 
-    # Use the untrained generator to create an image:
+    # Use the un-trained generator to create an image:
     generator = make_dcgan_generator_model()
     noise = tf.random.normal(shape=[1, 100], mean=0.0, stddev=1.0, seed=42)
     generated_image = generator(noise, training=False)
+    # Convert from shape (1, 28, 28, 1) to (28, 28) for matplotlib:
     plt.imshow(generated_image[0, :, :, 0], cmap='gray')
+    plt.show()
